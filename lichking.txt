@@ -13,18 +13,19 @@ stage {
     let nextFrostmourneHungers = 0;
     let ghouls = [  ];
     let ragings = [  ];
-    let valkyrs = [ ];
+    let valkyrs = [  ];
     let phase = 0;
     let lichKingStartHP = 0;
     let time = 0;
     let transitionActive = false;
-    let RAGINGHP = 40; // 40
-    let GHOULHP = 10; // 10
-    let VALKYRHP = 20; // 20
-    let TRANSITIONLENGTH = 45; // 45
-    let EASYHP = 300; // 300
-    let NORMALHP = 400; // 400
-    let HARDHP = 800; // 800
+    let RAGINGHP = 40;
+    let GHOULHP = 10;
+    let VALKYRHP = 20;
+    let TRANSITIONLENGTH = 45;
+    let EASYHP = 300;
+    let NORMALHP = 400;
+    let HARDHP = 800;
+    let SHADOW_TRAP_FREQ = 15;
     function getHpColour(value) {
         if(value >= 13) {
             return "green"
@@ -39,17 +40,32 @@ stage {
         }
     }
     function scoreDisplay() {
-        return "Score: " + score + " Time: " + Math.round(time);
-    }
-    when signalReceived("gameOver") {
-        time = Timer.read();
-        this.clearPenTrails();
+        return "Score: " + score + " Time: " + Math.round(time)
     }
     function takeDamage(target, amount) {
         target.HP -= amount;
         if(target == Player) {
             score -= 5 * amount;
         }
+    }
+    function timers() {
+        if(transitionActive) {
+            // TODO: maybe do transition timers, idk not that important DO THE IMPORTANT STUFF YOU MORON
+            return ""
+        }
+        if(phase == 1) {
+            return " Ghouls: " + nextGhouls + "\nShadow Trap: " + nextShadowTrap
+        }
+        if(phase == 2) {
+            return " Valkyr: " + nextValkyr + "\nDefile: " + nextDefile
+        }
+        if(phase == 3) {
+            return " Frostmourne Hungers: " + nextFrostmourneHungers + "\nDefile: " + nextDefile
+        }
+    }
+    when signalReceived("gameOver") {
+        time = Timer.read();
+        clearPenTrails();
     }
     when signalReceived("Pull") {
         wait(0.1);
@@ -71,49 +87,28 @@ stage {
         playerSpeed = 3;
         //bubble.fontSize = 5;
     }
-    
-    function timers() 
-    {
-        if (transitionActive)
-        {
-            // TODO: maybe do transition timers, idk not that important DO THE IMPORTANT STUFF YOU MORON
-            return "";
-        }
-        if (phase == 1)
-        {
-            return " Ghouls: " + nextGhouls + "\nShadow Trap: " + nextShadowTrap;
-        }
-        if (phase == 2)
-        {
-            return " Valkyr: " + nextValkyr + "\nDefile: " + nextDefile;
-        }
-        if (phase == 3)
-        {
-            return " Frostmourne Hungers: " + nextFrostmourneHungers + "\nDefile: " + nextDefile;
-        }
-    }
-    when stage.signalReceived("Pull")
-    {
+    when signalReceived("Pull") {
         Timer.reset();
-        let _monitor = this.createMonitor("", this.timers);
+        let _monitor = createMonitor("", timers);
         _monitor.background = "black";
         _monitor.fontSize = 12;
         _monitor.setPosition(-320, 180);
         while(gameOn) {
+            
         }
         _monitor.delete();
     }
-    when stage.signalReceived("Pull")
-    {
-        this.wait(1);
+    when signalReceived("Pull") {
+        wait(1);
         while(gameOn) {
-            this.wait(4);
-            this.takeDamage(this.Player, 1);
-            this.takeDamage(this.Angyal, 1);
-            this.takeDamage(this.Dps, 1);
-            this.takeDamage(this.Tank, 1);
+            wait(4);
+            takeDamage(Player, 1);
+            takeDamage(Healer, 1);
+            takeDamage(Dps, 1);
+            takeDamage(Tank, 1);
         }
     }
+    
     actor Proxima_Számjegy {
         costume Egy("gallery:Text/Proxima Digit One")
         costume Kettő("gallery:Text/Proxima Digit Two")
@@ -163,22 +158,19 @@ stage {
         }
         function summonGhouls() {
             Ghoul.goTo(LichKing);
-            for(let i = 1; i <= 3; i++) 
-            {
+            for(let i = 1; i <= 3; i++) {
                 createClone(Ghoul);
+                this.wait(1);
             }
         }
-        function summonValkyr() 
-        {
+        function summonValkyr() {
             createClone(Valkyr);
         }
-        function castDefile() 
-        {
+        function castDefile() {
             createClone(Defile);
         }
-        function castFrostmourneHungers()
-        {
-
+        function castFrostmourneHungers() {
+            
         }
         when stage.started {
             hide();
@@ -189,7 +181,7 @@ stage {
             heading = -90;
         }
         when stage.signalReceived("Pull") {
-            nextShadowTrap = 15;
+            nextShadowTrap = SHADOW_TRAP_FREQ;
             nextGhouls = 5;
             nextValkyr = 10;
             nextDefile = 20;
@@ -223,7 +215,7 @@ stage {
             while(gameOn && HP > 0) {
                 if(nextShadowTrap <= 0 && phase == 1 && !transitionActive) {
                     castShadowTrap();
-                    nextShadowTrap = 15;
+                    nextShadowTrap = SHADOW_TRAP_FREQ;
                 }
                 if(nextGhouls <= 0 && phase == 1 && !transitionActive) {
                     summonGhouls();
@@ -233,8 +225,7 @@ stage {
                     summonValkyr();
                     nextValkyr = 30;
                 }
-                if (nextDefile <= 0 && (phase == 2 || phase == 3) && !transitionActive)
-                {
+                if(nextDefile <= 0 && (phase == 2 || phase == 3) && !transitionActive) {
                     castDefile();
                     nextDefile = 15;
                 }
@@ -251,7 +242,7 @@ stage {
                     setPosition(0, 0);
                 }
             }
-            this.hide();
+            hide();
         }
         when stage.signalReceived("Pull") {
             // Event responsible for setting the phase variable
@@ -262,7 +253,7 @@ stage {
                 if(HP < lichKingStartHP * 0.4) {
                     if(!transitionTwoDone) {
                         broadcast("transition");
-                        this.wait(TRANSITIONLENGTH)
+                        wait(TRANSITIONLENGTH);
                         transitionTwoDone = true;
                         nextFrostmourneHungers = 30;
                         nextDefile = 4;
@@ -273,7 +264,7 @@ stage {
                     if(HP < lichKingStartHP * 0.7) {
                         if(!transitionOneDone) {
                             broadcast("transition");
-                            this.wait(TRANSITIONLENGTH);
+                            wait(TRANSITIONLENGTH);
                             transitionOneDone = true;
                             nextValkyr = 7;
                             nextDefile = 4;
@@ -362,13 +353,11 @@ stage {
         function returnHP() {
             return HP
         }
-        function touchingSomethingBad()
-        {
-            if (this.touchingActorOrClone(Defile) || this.touchingActorOrClone(ShadowTrap))
-            {
-                return true;
+        function touchingSomethingBad() {
+            if(touchingActorOrClone(Defile) || touchingActorOrClone(ShadowTrap)) {
+                return true
             }
-            return false;
+            return false
         }
         when stage.started {
             hide();
@@ -611,8 +600,7 @@ stage {
             if(ghouls.length != 0) {
                 target = ghouls[0];
             }
-            if (valkyrs.length != 0)
-            {
+            if(valkyrs.length != 0) {
                 target = valkyrs[0];
             }
             if(!isClone && gameOn && Player.active) {
@@ -674,13 +662,11 @@ stage {
         costume Cseppkő_Szürke_1("gallery:Nature/Speleothem Grey 1")
         let HP = 0;
         let active = true;
-        function touchingSomethingBad()
-        {
-            if (this.touchingActorOrClone(Defile) || this.touchingActorOrClone(ShadowTrap))
-            {
-                return true;
+        function touchingSomethingBad() {
+            if(touchingActorOrClone(Defile) || touchingActorOrClone(ShadowTrap)) {
+                return true
             }
-            return false;
+            return false
         }
         function returnHP() {
             return HP
@@ -689,7 +675,7 @@ stage {
             hide();
             size = 10;
             heading = 90;
-            this.opacity = 100;
+            opacity = 100;
             physics.collisionShape = "box";
             rotationStyle = "leftRight";
             setPosition(150, 0);
@@ -822,18 +808,16 @@ stage {
         function returnHP() {
             return HP
         }
-        function touchingSomethingBad()
-        {
-            if (this.touchingActorOrClone(Defile) || this.touchingActorOrClone(ShadowTrap))
-            {
-                return true;
+        function touchingSomethingBad() {
+            if(touchingActorOrClone(Defile) || touchingActorOrClone(ShadowTrap)) {
+                return true
             }
-            return false;
+            return false
         }
         when stage.started {
             hide();
             size = 30;
-            this.opacity = 100;
+            opacity = 100;
             setPosition(-50, 150);
             rotationStyle = "leftRight";
             physics.collisionShape = "box";
@@ -894,7 +878,7 @@ stage {
                     score -= 250;
                 }
                 else {
-                    this.pointTowards(LichKing);
+                    pointTowards(LichKing);
                 }
             }
         }
@@ -1031,93 +1015,7 @@ stage {
             }
         }
     }
-    /*
-    actor MusicButton {
-        costume musicOffHover("user:h.szabolcs/musicOffHover")
-        costume musicOffNoHover("user:h.szabolcs/musicOffNoHover")
-        costume musicOnHover("user:h.szabolcs/musicOnHover")
-        costume musicOnNoHover("user:h.szabolcs/musicOnNoHover")
-        let musicButtonPosX = -300;
-        let musicButtonPosY = -160;
-        when stage.started {
-            setPosition(musicButtonPosX, musicButtonPosY);
-            setCostume(musicOnNoHover);
-            size = 35;
-            musicOn = true;
-            setCssTint("#1111FF");
-        }
-        when clicked {
-            musicOn = !musicOn;
-            if(soundsOn) {
-                setCostume(musicOnHover);
-                //this.setCssTint("#18B818");
-            }
-            else {
-                setCostume(musicOffHover);
-                //this.setCssTint("#D80000");
-            }
-        }
-        when pointerOver {
-            if(musicOn) {
-                setCostume(musicOnHover);
-            }
-            else {
-                setCostume(musicOffHover);
-            }
-        }
-        when pointerOut {
-            if(musicOn) {
-                setCostume(musicOnNoHover);
-            }
-            else {
-                setCostume(musicOffNoHover);
-            }
-        }
-    }
     
-    actor SoundsButton {
-        costume soundOnNoHover("user:h.szabolcs/soundOnNoHover")
-        costume soundOnHover("user:h.szabolcs/soundOnHover")
-        costume soundOffNoHover("user:h.szabolcs/soundOffNoHover")
-        costume soundOffHover("user:h.szabolcs/soundOffHover")
-        let soundsButtonPosX = -270;
-        let soundsButtonPosY = -160;
-        when stage.started {
-            setPosition(soundsButtonPosX, soundsButtonPosY);
-            size = 35;
-            setCostume(soundOnNoHover);
-            soundsOn = true;
-            setCssTint("#1111FF");
-        }
-        when clicked {
-            soundsOn = !soundsOn;
-            if(soundsOn) {
-                setCostume(soundOnHover);
-                //this.setCssTint("#18B818");
-            }
-            else {
-                setCostume(soundOffHover);
-                //this.setCssTint("#D80000");
-            }
-        }
-        when pointerOver {
-            if(soundsOn) {
-                setCostume(soundOnHover);
-            }
-            else {
-                setCostume(soundOffHover);
-            }
-        }
-        when pointerOut {
-            if(soundsOn) {
-                setCostume(soundOnNoHover);
-            }
-            else {
-                setCostume(soundOffNoHover);
-            }
-        }
-    }
-    */
     actor ButtonEasy {
         costume Szintek_Kerek_Világos_Easy("gallery:Misc_Universe/Levels Round Light Easy")
         costume Szintek_Kerek_Világos_Medium("gallery:Misc_Universe/Levels Round Light Medium")
@@ -1279,27 +1177,39 @@ stage {
         costume Kör_Fehér("gallery:Shapes/Circle White")
         when stage.started {
             hide();
-            size = 160;
+            size = 200;
             goToBack();
         }
         when cloned {
             show();
             goToBack();
-            while(phase == 1 && !transitionActive) 
-            {
-                if (this.touching(Player))
-                {
+            while(phase == 1 && !transitionActive && gameOn) {
+                if(touching(Player)) {
                     takeDamage(Player, 2);
-                    this.wait(0.5);
-                }   
+                    wait(0.5);
+                }
             }
             deleteClone(this);
         }
     }
     
     actor Ghoul {
-        costume Ghoul_Sétál_1("gallery:Figures/Zombie Walk 1")
-        costume Ghoul_Sétál_2("gallery:Figures/Zombie Walk 2")
+        costume move1("user:h.szabolcs/move1")
+        costume move2("user:h.szabolcs/move2")
+        costume move3("user:h.szabolcs/move3")
+        costume move4("user:h.szabolcs/move4")
+        costume move5("user:h.szabolcs/move5")
+        costume move6("user:h.szabolcs/move6")
+        costume move7("user:h.szabolcs/move7")
+        costume move8("user:h.szabolcs/move8")
+        costume attack1("user:h.szabolcs/attack1")
+        costume attack2("user:h.szabolcs/attack2")
+        costume attack3("user:h.szabolcs/attack3")
+        costume attack4("user:h.szabolcs/attack4")
+        costume attack5("user:h.szabolcs/attack5")
+        costume attack6("user:h.szabolcs/attack6")
+        costume attack7("user:h.szabolcs/attack7")
+        costume attack8("user:h.szabolcs/attack8")
         let HP = GHOULHP;
         when stage.started {
             hide();
@@ -1310,12 +1220,54 @@ stage {
             ghouls.push(this);
             show();
             while(HP > 0) {
-                pointTowards(Player);
-                move(6);
+                if (this.distanceTo(Player) > 50) 
+                {
+                    if (this.costumeId > 8)
+                    {
+                        this.setCostume(1);
+                    }
+                    pointTowards(Player);
+                    move(6);
+                    if (this.costumeId == 8)
+                    {
+                        this.setCostume(1);
+                    }
+                    else
+                    {
+                        this.nextCostume();
+                    }
+
+                }
+                else
+                {
+                    if (this.costumeId < 9)
+                    {
+                        this.setCostume(9);
+                    }
+                    if (this.costumeId == 16)
+                    {
+                        this.setCostume(9);
+                    }
+                    else
+                    {
+                        this.nextCostume();
+                    }
+                }
                 wait(0.1);
             }
             ghouls.remove(this);
             deleteClone(this);
+        }
+        when cloned
+        {
+            while (true)
+            {
+                if (this.distanceTo(Player) < 50)
+                {
+                    this.wait(2);
+                    takeDamage(Player, 1);
+                }
+            }
         }
     }
     
@@ -1347,19 +1299,16 @@ stage {
             }
             hide();
         }
-        when stage.signalReceived("transition")
-        {
-            this.wait(2); // No damage for 2 seconds when it starts
-            while (transitionActive)
-            {
-                if (this.touching(Player))
-                {
+        when stage.signalReceived("transition") {
+            wait(2);
+            // No damage for 2 seconds when it starts
+            while(transitionActive) {
+                if(touching(Player)) {
                     takeDamage(Player, 5);
-                    this.wait(1);
+                    wait(1);
                 }
-                if (!gameOn)
-                {
-                    this.hide();
+                if(!gameOn) {
+                    hide();
                 }
             }
         }
@@ -1411,13 +1360,6 @@ stage {
                 wait(10);
             }
         }
-        /* LAGGY
-        when cloned {
-            while(gameOn && HP > 0) {
-                nextCostume();
-                wait(0.1);
-            }
-        }*/
         when cloned {
             ragings.push(this);
             HP = RAGINGHP;
@@ -1432,6 +1374,14 @@ stage {
             ragings.remove(this);
             deleteClone(this);
         }
+
+        /* LAGGY
+        when cloned {
+            while(gameOn && HP > 0) {
+                nextCostume();
+                wait(0.1);
+            }
+        }*/
     }
     
     actor Valkyr {
@@ -1455,25 +1405,22 @@ stage {
             HP = VALKYRHP;
             valkyrs.push(this);
             let target = randomAlly();
-            this.goTo(target);
-            this.show();
+            goTo(target);
+            show();
             target.active = false;
             target.hide();
-            this.pointTowards(Position.center);
-            while (HP > 0 && gameOn)
-            {
-                this.move(2);
-                this.wait(0.05);
+            pointTowards(Position.center);
+            while(HP > 0 && gameOn) {
+                move(2);
+                wait(0.05);
                 target.goTo(this);
-                if (this.y > 170 || this.y < -170 || this.x > 330 || this.x < -330)
-                {
+                if(y > 170 || y < -170 || x > 330 || x < -330) {
                     target.HP = 0;
                     valkyrs.remove(this);
                     deleteClone();
                 }
             }
-            if (gameOn)
-            {
+            if(gameOn) {
                 target.goTo(this);
                 target.active = true;
                 target.show();
@@ -1482,21 +1429,9 @@ stage {
             deleteClone();
         }
     }
-
+    
     actor Defile {
         costume Kör_Fehér("gallery:Shapes/Circle White")
-        when stage.started {
-            show();
-            size = 150;
-            this.goToBack();
-            setPosition(0, 0);
-            setCssTint("#800080");
-        }
-        when stage.signalReceived("PullTimer") {
-            hide();
-            size = 150;
-            setPosition(0, 0);
-        }
         function randomAlly() {
             let random = Math.randomBetween(1, 3);
             if(random == 2) {
@@ -1512,44 +1447,53 @@ stage {
                 return Player
             }
         }
-        when cloned
-        {
-            this.goTo(randomAlly());
-            this.goToBack();
-            this.show();
-            this.wait(25);
+        when stage.started {
+            show();
+            size = 150;
+            goToBack();
+            setPosition(0, 0);
+            setCssTint("#800080");
+        }
+        when stage.signalReceived("PullTimer") {
+            hide();
+            size = 150;
+            setPosition(0, 0);
+        }
+        when cloned {
+            goTo(randomAlly());
+            goToBack();
+            show();
+            wait(25);
             deleteClone();
         }
-        when cloned
-        {
-            while (gameOn)
-            {
-                if (this.touching(Player))
-                {
-                    this.size += 15;
+        when cloned {
+            while(gameOn) {
+                if(touching(Player)) {
+                    size += 15;
                     takeDamage(Player, 1);
-                    this.wait(0.5);
+                    wait(0.5);
                 }
             }
             deleteClone();
         }
     }
+    
     actor Winner {
         costume Winner_Kék("gallery:Text/Winner Blue")
         costume Winner_Zöld("gallery:Text/Winner Green")
         costume Game_Over_1("gallery:Text/Game Over 1")
         costume Game_Over_2("gallery:Text/Game Over 2")
         when stage.started {
-            this.hide();
-            this.setPosition(0, 90);
-            this.size = 90;
+            hide();
+            setPosition(0, 90);
+            size = 90;
         }
         when stage.signalReceived("winner") {
             clearPenTrails();
-            this.wait(4.5);
+            wait(4.5);
             showScore = true;
-            this.setCostume(this.Winner_Kék);
-            this.show();
+            setCostume(Winner_Kék);
+            show();
             time = Timer.read();
             let scoreMonitor = createMonitor("", scoreDisplay);
             scoreMonitor.fontSize = 0;
@@ -1557,37 +1501,180 @@ stage {
             scoreMonitor.setPosition(-80, 170);
             for(let i = 1; i <= 10; i++) {
                 scoreMonitor.fontSize = i * 2;
-                this.wait(0.1);
+                wait(0.1);
             }
             while(showScore) {
-                this.nextCostume();
-                this.wait(0.2);
-                this.previousCostume();
-                this.wait(0.2);
+                nextCostume();
+                wait(0.2);
+                previousCostume();
+                wait(0.2);
             }
             scoreMonitor.fontSize = 0;
             scoreMonitor.delete();
-            this.hide();
+            hide();
         }
         when stage.signalReceived("gameOver") {
             clearPenTrails();
-            this.wait(4.2);
-            this.setCostume(3);
-            this.show();
+            wait(4.2);
+            setCostume(3);
+            show();
             while(showScore) {
-                this.nextCostume();
-                this.wait(0.2);
-                this.previousCostume();
-                this.wait(0.2);
+                nextCostume();
+                wait(0.2);
+                previousCostume();
+                wait(0.2);
             }
-            this.hide();
+            hide();
         }
-    }   
+    }
+
+    /*
+    actor Thumbnail {
+        costume lkbossfightthum("user:h.szabolcs/lkbossfightthum")
+        when stage.started
+        {
+            this.hide();
+            this.size = 60;
+            while (true)
+            {
+                if (isKeyPressed("left arrow"))
+                {
+                    this.x -= 5;
+                }
+                if (isKeyPressed("right arrow"))
+                {
+                    this.x += 5;
+                }
+                if (isKeyPressed("down arrow"))
+                {
+                    this.y -= 5;
+                }
+                if (isKeyPressed("up arrow"))
+                {
+                    this.y += 5;
+                }
+                if (isKeyPressed("q") && isKeyPressed("p")) 
+                {
+                    this.show();    
+                }
+            }
+        }
+    }
+    */
+    // 40
+    // 10
+    // 20
+    // 45
+    // 300
+    // 400
+    // 800
+    // 15
+
+    /*
+    actor MusicButton {
+        costume musicOffHover("user:h.szabolcs/musicOffHover")
+        costume musicOffNoHover("user:h.szabolcs/musicOffNoHover")
+        costume musicOnHover("user:h.szabolcs/musicOnHover")
+        costume musicOnNoHover("user:h.szabolcs/musicOnNoHover")
+        let musicButtonPosX = -300;
+        let musicButtonPosY = -160;
+        when stage.started {
+            setPosition(musicButtonPosX, musicButtonPosY);
+            setCostume(musicOnNoHover);
+            size = 35;
+            musicOn = true;
+            setCssTint("#1111FF");
+        }
+        when clicked {
+            musicOn = !musicOn;
+            if(soundsOn) {
+                setCostume(musicOnHover);
+                //this.setCssTint("#18B818");
+            }
+            else {
+                setCostume(musicOffHover);
+                //this.setCssTint("#D80000");
+            }
+        }
+        when pointerOver {
+            if(musicOn) {
+                setCostume(musicOnHover);
+            }
+            else {
+                setCostume(musicOffHover);
+            }
+        }
+        when pointerOut {
+            if(musicOn) {
+                setCostume(musicOnNoHover);
+            }
+            else {
+                setCostume(musicOffNoHover);
+            }
+        }
+    }
+    
+    actor SoundsButton {
+        costume soundOnNoHover("user:h.szabolcs/soundOnNoHover")
+        costume soundOnHover("user:h.szabolcs/soundOnHover")
+        costume soundOffNoHover("user:h.szabolcs/soundOffNoHover")
+        costume soundOffHover("user:h.szabolcs/soundOffHover")
+        let soundsButtonPosX = -270;
+        let soundsButtonPosY = -160;
+        when stage.started {
+            setPosition(soundsButtonPosX, soundsButtonPosY);
+            size = 35;
+            setCostume(soundOnNoHover);
+            soundsOn = true;
+            setCssTint("#1111FF");
+        }
+        when clicked {
+            soundsOn = !soundsOn;
+            if(soundsOn) {
+                setCostume(soundOnHover);
+                //this.setCssTint("#18B818");
+            }
+            else {
+                setCostume(soundOffHover);
+                //this.setCssTint("#D80000");
+            }
+        }
+        when pointerOver {
+            if(soundsOn) {
+                setCostume(soundOnHover);
+            }
+            else {
+                setCostume(soundOffHover);
+            }
+        }
+        when pointerOut {
+            if(soundsOn) {
+                setCostume(soundOnNoHover);
+            }
+            else {
+                setCostume(soundOffNoHover);
+            }
+        }
+    }
+    */
+
     /*
         RELEASE LOG
 
         2024.06.25 - Alpha version released
             The base of the game is done and playable
+        
+        2024.06.26 - HOTFIX
+            fixed shadow traps not despawning after game over in phase 1
+            Shadow trap size increased from 160 to 200
+
+        2024.06.27 - Thumbnail done
+
+        2024.06.28 - Ghouls updated
+            Ghouls got their new models
+            Ghouls do 1 damage per 2 secs each now
+
+
 
         TODO:
             Ghouls and Ragings don't do damage
@@ -1595,9 +1682,8 @@ stage {
             Better score system
             A lot of actors need new pixelart models
             In need of a new background
-            Thumbnail
+            (Done) Thumbnail
             Medipack?
             No major playtest has been done yet so be ready for a lot of bugs
     */
 }
-
