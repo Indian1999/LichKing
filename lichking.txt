@@ -1,5 +1,5 @@
 stage {
-    backdrop Planets("gallery:Planets_Universe/Planets")
+    default backdrop pixelated_backg("user:h.szabolcs/pixelated backg")
     let gameOn = false;
     let difficulty = 2;
     let soundsOn = false;
@@ -18,7 +18,7 @@ stage {
     let lichKingStartHP = 0;
     let time = 0;
     let transitionActive = false;
-    let RAGINGHP = 40;
+    let RAGINGHP = 30;
     let GHOULHP = 10;
     let VALKYRHP = 20;
     let TRANSITIONLENGTH = 45;
@@ -76,7 +76,7 @@ stage {
                 score += 500 * difficulty;
                 broadcast("winner");
             }
-            if(Player.HP <= 0) {
+            if(Player.HP <= 0 || Tank.HP <= 0) {
                 gameOn = false;
                 score -= 400;
                 broadcast("gameOver");
@@ -160,7 +160,7 @@ stage {
             Ghoul.goTo(LichKing);
             for(let i = 1; i <= 3; i++) {
                 createClone(Ghoul);
-                this.wait(1);
+                wait(1);
             }
         }
         function summonValkyr() {
@@ -182,7 +182,7 @@ stage {
         }
         when stage.signalReceived("Pull") {
             nextShadowTrap = SHADOW_TRAP_FREQ;
-            nextGhouls = 5;
+            nextGhouls = 10;
             nextValkyr = 10;
             nextDefile = 20;
             show();
@@ -348,7 +348,8 @@ stage {
         costume tank_5("user:h.szabolcs/tank 5")
         costume tank_6("user:h.szabolcs/tank 6")
         costume tank_7("user:h.szabolcs/tank 7")
-        let HP = 0;
+        let HP = 40;
+        let maxHP = 20;
         let active = true;
         function returnHP() {
             return HP
@@ -382,7 +383,7 @@ stage {
             }
         }
         when stage.signalReceived("Pull") {
-            HP = 20;
+            HP = 40;
             let monitor = createMonitor("", returnHP);
             monitor.background = getHpColour(HP);
             while(gameOn && HP > 0) {
@@ -508,6 +509,7 @@ stage {
         costume archer_27("user:h.szabolcs/archer 27")
         sound Pop_1("gallery:Effects/Pop")
         let HP = 0;
+        let maxHP = 20;
         let active = true;
         function returnHP() {
             return HP
@@ -660,7 +662,8 @@ stage {
         costume healerFront6("user:h.szabolcs/healerFront6")
         costume healerFront7("user:h.szabolcs/healerFront7")
         costume Cseppkő_Szürke_1("gallery:Nature/Speleothem Grey 1")
-        let HP = 0;
+        let HP = 20;
+        let maxHP = 20;
         let active = true;
         function touchingSomethingBad() {
             if(touchingActorOrClone(Defile) || touchingActorOrClone(ShadowTrap)) {
@@ -804,7 +807,8 @@ stage {
         costume war10("user:h.szabolcs/war10")
         costume Cseppkő_Szürke_1("gallery:Nature/Speleothem Grey 1")
         let active = true;
-        let HP = 0;
+        let HP = 20;
+        let maxHP = 20;
         function returnHP() {
             return HP
         }
@@ -973,8 +977,8 @@ stage {
             goTo(Healer);
             goToFront();
             show();
-            if(Healer.HP >= 17) {
-                Healer.HP = 20;
+            if(Healer.HP >= Healer.maxHP-3) {
+                Healer.HP = Healer.maxHP;
             }
             else {
                 if(Healer.HP > 0) {
@@ -986,8 +990,8 @@ stage {
                 move(10);
                 wait(0.01);
             }
-            if(target.HP >= 17) {
-                target.HP = 20;
+            if(target.HP >= target.maxHP-3) {
+                target.HP = target.maxHP;
             }
             else {
                 if(target.HP > 0) {
@@ -1220,37 +1224,28 @@ stage {
             ghouls.push(this);
             show();
             while(HP > 0) {
-                if (this.distanceTo(Player) > 50) 
-                {
-                    if (this.costumeId > 8)
-                    {
-                        this.setCostume(1);
+                if(distanceTo(Player) > 50) {
+                    if(costumeId > 8) {
+                        setCostume(1);
                     }
                     pointTowards(Player);
                     move(6);
-                    if (this.costumeId == 8)
-                    {
-                        this.setCostume(1);
+                    if(costumeId == 8) {
+                        setCostume(1);
                     }
-                    else
-                    {
-                        this.nextCostume();
+                    else {
+                        nextCostume();
                     }
-
                 }
-                else
-                {
-                    if (this.costumeId < 9)
-                    {
-                        this.setCostume(9);
+                else {
+                    if(costumeId < 9) {
+                        setCostume(9);
                     }
-                    if (this.costumeId == 16)
-                    {
-                        this.setCostume(9);
+                    if(costumeId == 16) {
+                        setCostume(9);
                     }
-                    else
-                    {
-                        this.nextCostume();
+                    else {
+                        nextCostume();
                     }
                 }
                 wait(0.1);
@@ -1258,13 +1253,10 @@ stage {
             ghouls.remove(this);
             deleteClone(this);
         }
-        when cloned
-        {
-            while (true)
-            {
-                if (this.distanceTo(Player) < 50)
-                {
-                    this.wait(2);
+        when cloned {
+            while(true) {
+                if(distanceTo(Player) < 50) {
+                    wait(2);
                     takeDamage(Player, 1);
                 }
             }
@@ -1275,12 +1267,11 @@ stage {
         costume Kör_Fehér("gallery:Shapes/Circle White")
         when stage.started {
             hide();
-            size = 1300;
+            size = 1000;
             setPosition(0, 0);
         }
         when stage.signalReceived("PullTimer") {
             hide();
-            size = 1300;
             setPosition(0, 0);
         }
         when stage.signalReceived("transition") {
@@ -1289,13 +1280,14 @@ stage {
             show();
             transitionActive = true;
             while(transitionActive) {
-                if(opacity < 30) {
+                for(let i = 1; i <= 10; i++) {
                     opacity++;
+                    wait(0.1);
                 }
-                else {
+                for(let i = 1; i <= 10; i++) {
                     opacity--;
+                    wait(0.1);
                 }
-                wait(0.05);
             }
             hide();
         }
@@ -1303,7 +1295,7 @@ stage {
             wait(2);
             // No damage for 2 seconds when it starts
             while(transitionActive) {
-                if(touching(Player)) {
+                if(distanceTo(Player) < 150) {
                     takeDamage(Player, 5);
                     wait(1);
                 }
@@ -1320,12 +1312,13 @@ stage {
     }
     
     actor Raging {
-        costume Kísértet_1("gallery:Monsters/Ghost 1")
-        costume Kísértet_2("gallery:Monsters/Ghost 2")
-        costume Kísértet_3("gallery:Monsters/Ghost 3")
-        costume Kísértet_4("gallery:Monsters/Ghost 4")
-        costume Kísértet_5("gallery:Monsters/Ghost 5")
-        costume Kísértet_6("gallery:Monsters/Ghost 6")
+        costume raging1("user:h.szabolcs/raging1")
+        costume raging2("user:h.szabolcs/raging2")
+        costume raging3("user:h.szabolcs/raging3")
+        costume raging4("user:h.szabolcs/raging4")
+        costume raging5("user:h.szabolcs/raging5")
+        costume raging6("user:h.szabolcs/raging6")
+        costume raging7("user:h.szabolcs/raging7")
         let HP = RAGINGHP;
         function randomAlly() {
             let random = Math.randomBetween(1, 4);
@@ -1347,7 +1340,7 @@ stage {
         }
         when stage.started {
             hide();
-            size = 60;
+            size = 35;
             opacity = 70;
             rotationStyle = "leftRight";
         }
@@ -1370,22 +1363,29 @@ stage {
                     move(10);
                     wait(0.02);
                 }
+                else
+                {
+                    this.wait(5);
+                    takeDamage(Tank, 1);
+                }
             }
             ragings.remove(this);
             deleteClone(this);
         }
-
-        /* LAGGY
         when cloned {
             while(gameOn && HP > 0) {
                 nextCostume();
                 wait(0.1);
             }
-        }*/
+        }
     }
     
     actor Valkyr {
-        costume Fekete_Boszorkány_Alap("gallery:Figures/Black Witch Idle")
+        costume Valkyr_1("user:h.szabolcs/Valkyr 1")
+        costume Valkyr_2("user:h.szabolcs/Valkyr 2")
+        costume Valkyr_3("user:h.szabolcs/Valkyr 3")
+        costume Valkyr_4("user:h.szabolcs/Valkyr 4")
+        costume Valkyr_5("user:h.szabolcs/Valkyr 5")
         let HP = VALKYRHP;
         function randomAlly() {
             let random = Math.randomBetween(2, 3);
@@ -1428,6 +1428,12 @@ stage {
             valkyrs.remove(this);
             deleteClone();
         }
+        when cloned {
+            while(true) {
+                nextCostume();
+                wait(0.2);
+            }
+        }
     }
     
     actor Defile {
@@ -1448,7 +1454,7 @@ stage {
             }
         }
         when stage.started {
-            show();
+            hide();
             size = 150;
             goToBack();
             setPosition(0, 0);
@@ -1673,16 +1679,20 @@ stage {
         2024.06.28 - Ghouls updated
             Ghouls got their new models
             Ghouls do 1 damage per 2 secs each now
-
+            Adjusted Transition Ice size
+            Transition ice deals damage in a smaller radius
+            New valkyr modell
+            New background
+            New Raging Spirit modell
+            Raging now do damage to the tank (1 every 5 seconds)
+            If the tank dies, the game is over
+            Raging HP reduced to 30 from 40
 
 
         TODO:
-            Ghouls and Ragings don't do damage
             There is no sound in the game yet
             Better score system
-            A lot of actors need new pixelart models
-            In need of a new background
-            (Done) Thumbnail
+            (In progress) A lot of actors need new pixelart models
             Medipack?
             No major playtest has been done yet so be ready for a lot of bugs
     */
